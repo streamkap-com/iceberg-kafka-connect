@@ -69,6 +69,8 @@ public class IcebergSinkConfig extends AbstractConfig {
   private static final String TABLES_PROP = "iceberg.tables";
   private static final String TABLES_DYNAMIC_PROP = "iceberg.tables.dynamic-enabled";
   private static final String TABLES_ROUTE_FIELD_PROP = "iceberg.tables.route-field";
+  private static final String TABLES_ROUTE_IS_FIELD_REGEX = "iceberg.tables.route-field-is-regex";
+  private static final String TABLES_ROUTE_FIELD_REGEX_REPLACEMENT = "iceberg.tables.route-field.replacement";
   private static final String TABLES_DEFAULT_COMMIT_BRANCH = "iceberg.tables.default-commit-branch";
   private static final String TABLES_DEFAULT_ID_COLUMNS = "iceberg.tables.default-id-columns";
   private static final String TABLES_DEFAULT_PARTITION_BY = "iceberg.tables.default-partition-by";
@@ -135,6 +137,18 @@ public class IcebergSinkConfig extends AbstractConfig {
         null,
         Importance.MEDIUM,
         "Source record field for routing records to tables");
+    configDef.define(
+            TABLES_ROUTE_IS_FIELD_REGEX,
+            Type.BOOLEAN,
+            false,
+            Importance.MEDIUM,
+            "Is routing field contains dynamic place holder");
+    configDef.define(
+            TABLES_ROUTE_FIELD_REGEX_REPLACEMENT,
+            Type.STRING,
+            null,
+            Importance.MEDIUM,
+            "Replacement for route field regex");
     configDef.define(
         TABLES_DEFAULT_COMMIT_BRANCH,
         Type.STRING,
@@ -281,6 +295,10 @@ public class IcebergSinkConfig extends AbstractConfig {
     } else if (dynamicTablesEnabled()) {
       checkState(
           tablesRouteField() != null, "Must specify a route field if using dynamic table names");
+      if (tablesRouteFieldIsRegex()) {
+        checkState(
+                tablesRouteFieldRegexReplacement() != null, "Must specify a route regex replacement if using regex route value");
+      }
     } else {
       throw new ConfigException("Must specify table name(s)");
     }
@@ -335,6 +353,14 @@ public class IcebergSinkConfig extends AbstractConfig {
 
   public String tablesRouteField() {
     return getString(TABLES_ROUTE_FIELD_PROP);
+  }
+
+  public boolean tablesRouteFieldIsRegex() {
+    return getBoolean(TABLES_ROUTE_IS_FIELD_REGEX);
+  }
+
+  public String tablesRouteFieldRegexReplacement() {
+    return getString(TABLES_ROUTE_FIELD_REGEX_REPLACEMENT);
   }
 
   public String tablesDefaultCommitBranch() {

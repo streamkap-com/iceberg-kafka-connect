@@ -30,6 +30,9 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.relocated.com.google.common.annotations.VisibleForTesting;
 import org.apache.iceberg.relocated.com.google.common.base.Preconditions;
@@ -113,7 +116,7 @@ class Worker implements Writer, AutoCloseable {
               });
 
     } else {
-      String routeValue = extractRouteValue(record.value(), routeField);
+      String routeValue = extractRouteValue(record, routeField);
       if (routeValue != null) {
         config
             .tables()
@@ -136,18 +139,29 @@ class Worker implements Writer, AutoCloseable {
     String routeField = config.tablesRouteField();
     Preconditions.checkNotNull(routeField, String.format("Route field cannot be null with dynamic routing at topic: %s, partition: %d, offset: %d", record.topic(), record.kafkaPartition(), record.kafkaOffset()));
 
-    String routeValue = extractRouteValue(record.value(), routeField);
+    String routeValue = extractRouteValue(record, routeField);
     if (routeValue != null) {
       String tableName = routeValue.toLowerCase();
       writerForTable(tableName, record, true).write(record);
     }
   }
 
-  private String extractRouteValue(Object recordValue, String routeField) {
-    if (recordValue == null) {
+  private String extractRouteValue(SinkRecord record, String routeField) {
+    if (record.value() == null) {
       return null;
     }
-    Object routeValue = Utilities.extractFromRecordValue(recordValue, routeField);
+    Object routeValue;
+    if(config.tablesRouteFieldIsRegex()) {
+      Pattern pattern = Pattern.compile(routeField);
+      Matcher matcher = pattern.matcher(record.topic());
+      if(matcher.matches()) {
+        routeValue = matcher.replaceAll(config.tablesRouteFieldRegexReplacement());
+      } else {
+        routeValue = Utilities.extractFromRecordValue(record.value(), routeField);
+      }
+    } else {
+      routeValue = Utilities.extractFromRecordValue(record.value(), routeField);
+    }
     return routeValue == null ? null : routeValue.toString();
   }
 

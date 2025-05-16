@@ -155,7 +155,7 @@ public class Utilities {
   }
 
   public static TaskWriter<Record> createTableWriter(
-      Table table, String tableName, IcebergSinkConfig config) {
+      Table table, String tableName, IcebergSinkConfig config, List<String> keyFieldNames) {
     Map<String, String> tableProps = Maps.newHashMap(table.properties());
     tableProps.putAll(config.writeProps());
 
@@ -168,13 +168,20 @@ public class Utilities {
 
     Set<Integer> identifierFieldIds = table.schema().identifierFieldIds();
 
-    // override the identifier fields if the config is set
-    List<String> idCols = config.tableConfig(tableName).idColumns();
-    if (!idCols.isEmpty()) {
-      identifierFieldIds =
-          idCols.stream()
+    if (keyFieldNames != null && !keyFieldNames.isEmpty()) {
+      // If keyFieldNames is provided, prioritize it. Those are extracted from sinkrecord
+      identifierFieldIds = keyFieldNames.stream()
               .map(colName -> table.schema().findField(colName).fieldId())
               .collect(toSet());
+    } else {
+      // override the identifier fields if the config is set
+      List<String> idCols = config.tableConfig(tableName).idColumns();
+      if (!idCols.isEmpty()) {
+        identifierFieldIds =
+                idCols.stream()
+                        .map(colName -> table.schema().findField(colName).fieldId())
+                        .collect(toSet());
+      }
     }
 
     FileAppenderFactory<Record> appenderFactory;

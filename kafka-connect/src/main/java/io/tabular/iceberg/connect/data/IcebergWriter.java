@@ -43,20 +43,22 @@ public class IcebergWriter implements RecordWriter {
   private final String tableName;
   private final IcebergSinkConfig config;
   private final List<WriterResult> writerResults;
+  private final List<String> keyFieldNames;
 
   private RecordConverter recordConverter;
   private TaskWriter<Record> writer;
 
-  public IcebergWriter(Table table, String tableName, IcebergSinkConfig config) {
+  public IcebergWriter(Table table, String tableName, IcebergSinkConfig config, List<String> keyFieldNames) {
     this.table = table;
     this.tableName = tableName;
     this.config = config;
     this.writerResults = Lists.newArrayList();
+    this.keyFieldNames = keyFieldNames;
     initNewWriter();
   }
 
   private void initNewWriter() {
-    this.writer = Utilities.createTableWriter(table, tableName, config);
+    this.writer = Utilities.createTableWriter(table, tableName, config, keyFieldNames);
     this.recordConverter = new RecordConverter(table, config);
   }
 

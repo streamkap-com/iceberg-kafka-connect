@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 import io.tabular.iceberg.connect.IcebergSinkConfig;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Collections;
 import java.util.List;
 import org.apache.iceberg.LocationProviders;
 import org.apache.iceberg.PartitionSpec;
@@ -73,7 +74,7 @@ public class BaseWriterTest {
 
   protected WriteResult writeTest(
       List<Record> rows, IcebergSinkConfig config, Class<?> expectedWriterClass) {
-    try (TaskWriter<Record> writer = Utilities.createTableWriter(table, "name", config)) {
+    try (TaskWriter<Record> writer = Utilities.createTableWriter(table, "name", config, Collections.emptyList())) {
       assertThat(writer.getClass()).isEqualTo(expectedWriterClass);
 
       rows.forEach(

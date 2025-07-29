@@ -141,7 +141,7 @@ class Worker implements Writer, AutoCloseable {
 
     String routeValue = extractRouteValue(record, routeField);
     if (routeValue != null) {
-      String tableName = routeValue; // removing toLowerCase();
+      String tableName = routeValue.toLowerCase();
       writerForTable(tableName, record, true).write(record);
     }
   }

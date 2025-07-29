@@ -33,6 +33,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.iceberg.CatalogUtil;
@@ -170,8 +171,10 @@ public class Utilities {
 
     if (keyFieldNames != null && !keyFieldNames.isEmpty()) {
       // If keyFieldNames is provided, prioritize it. Those are extracted from sinkrecord
-      identifierFieldIds = keyFieldNames.stream()
-              .map(colName -> table.schema().findField(colName).fieldId())
+      identifierFieldIds =
+          keyFieldNames.stream()
+              .map(colName -> (table.schema().findField(colName) != null ? table.schema().findField(colName).fieldId() : null))
+              .filter(Objects::nonNull)
               .collect(toSet());
     } else {
       // override the identifier fields if the config is set
@@ -179,7 +182,8 @@ public class Utilities {
       if (!idCols.isEmpty()) {
         identifierFieldIds =
                 idCols.stream()
-                        .map(colName -> table.schema().findField(colName).fieldId())
+                        .map(colName -> (table.schema().findField(colName) != null ? table.schema().findField(colName).fieldId() : null))
+                        .filter(Objects::nonNull)
                         .collect(toSet());
       }
     }
